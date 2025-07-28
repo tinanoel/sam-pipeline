@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'docker' }   // or any agent with sam cli installed
+  agent any
 
   environment {
     AWS_DEFAULT_REGION = 'ap-south-1'
