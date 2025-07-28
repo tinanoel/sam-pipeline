@@ -16,7 +16,7 @@ def lambda_handler(event, context):
         customer = item.get("CustomerEmail", {}).get("S", "unknown")
 
         message = (
-            f"✅ New order placed\n"
+            f"New order placed\n"
             f"Order ID : {order_id}\n"
             f"Customer : {customer}\n"
             f"Amount   : ₹{amount}"
