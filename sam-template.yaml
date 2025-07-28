@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Serverless Orders Workflow – on INSERT to DynamoDB trigger Lambda,
+  which sends an SNS notification or starts Step Functions.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Tracing: Active
+    Environment:
+      Variables:
+        SNS_TOPIC_ARN: !Ref OrderTopic
+
+Resources:
+
+  # 1️⃣ DynamoDB table with NEW_IMAGE stream
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Orders
+      AttributeDefinitions:
+        - AttributeName: OrderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: OrderId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      DeletionPolicy: Retain   # keep data if stack deleted
+
+  # 2️⃣ SNS topic for notifications
+  OrderTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sns-demo
+
+  # OPTIONAL – subscribe an email address
+#  OrderTopicEmailSubscription:
+#    Type: AWS::SNS::Subscription
+#    Properties:
+#      TopicArn: !Ref OrderTopic
+#      Protocol: email
+
+  # 3️⃣ Lambda that processes stream records
+  ProcessOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ProcessOrderFunction
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SNSPublishMessagePolicy:    # managed SAM policy
+            TopicName: !GetAtt OrderTopic.TopicName
+      Events:
+        OrderStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt OrdersTable.StreamArn
+            StartingPosition: LATEST
+
+Outputs:
+  OrdersTableName:
+    Description: DynamoDB Table Name
+    Value: !Ref OrdersTable
+  ProcessOrderFunctionArn:
+    Description: Lambda ARN
+    Value: !GetAtt ProcessOrderFunction.Arn
+  OrderTopicArn:
+    Description: SNS Topic ARN
+    Value: !Ref OrderTopic
