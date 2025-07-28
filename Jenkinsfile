@@ -4,7 +4,7 @@ pipeline {
   environment {
     AWS_DEFAULT_REGION = 'ap-south-1'
     SAM_STACK_NAME     = "${params.STACK_NAME}"
-    SAM_TEMPLATE       = 'sam-template.yaml'
+    SAM_TEMPLATE       = 'template.yaml'
   }
 
   parameters {
@@ -38,7 +38,7 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh 'sam build --use-container'
+        sh 'sam build'
         archiveArtifacts artifacts: '.aws-sam/build/**/*', fingerprint: true
       }
     }
