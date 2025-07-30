@@ -1,9 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  Serverless Orders Workflow - on INSERT to DynamoDB trigger Lambda,
-  which sends an SNS notification or starts Step Functions.
-
+Description: "Serverless Orders Workflow - on INSERT to DynamoDB trigger Lambda, which\
+  \ sends an SNS notification or starts Step\_Functions.\n"
 Globals:
   Function:
     Runtime: python3.12
@@ -12,64 +10,69 @@ Globals:
     Tracing: Active
     Environment:
       Variables:
-        SNS_TOPIC_ARN: !Ref OrderTopic
-
+        SNS_TOPIC_ARN:
+          Ref: OrderTopic
 Resources:
-
-  # 1️⃣ DynamoDB table with NEW_IMAGE stream
   OrdersTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: Orders
       AttributeDefinitions:
-        - AttributeName: OrderId
-          AttributeType: S
+      - AttributeName: OrderId
+        AttributeType: S
       KeySchema:
-        - AttributeName: OrderId
-          KeyType: HASH
+      - AttributeName: OrderId
+        KeyType: HASH
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
         StreamViewType: NEW_IMAGE
-
-  #  SNS topic for notifications
   OrderTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: OrderTopic
-
-  # OPTIONAL – subscribe an email address
   OrderTopicEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref OrderTopic
+      TopicArn:
+        Ref: OrderTopic
       Protocol: email
-      Endpoint: emmy06.nar@gmail.com  # <-- change or remove
-
-  # Lambda that processes stream records
+      Endpoint: emmy06.nar@gmail.com
   ProcessOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ProcessOrderFunction
-      CodeUri: src/
+      CodeUri: ProcessOrderFunction
       Handler: app.lambda_handler
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - SNSPublishMessagePolicy:    # managed SAM policy
-            TopicName: !GetAtt OrderTopic.TopicName
+      - AWSLambdaBasicExecutionRole
+      - SNSPublishMessagePolicy:
+          TopicName:
+            Fn::GetAtt:
+            - OrderTopic
+            - TopicName
       Events:
         OrderStream:
           Type: DynamoDB
           Properties:
-            Stream: !GetAtt OrdersTable.StreamArn
+            Stream:
+              Fn::GetAtt:
+              - OrdersTable
+              - StreamArn
             StartingPosition: LATEST
-
+    Metadata:
+      SamResourceId: ProcessOrderFunction
 Outputs:
   OrdersTableName:
     Description: DynamoDB Table Name
-    Value: !Ref OrdersTable
+    Value:
+      Ref: OrdersTable
   ProcessOrderFunctionArn:
     Description: Lambda ARN
-    Value: !GetAtt ProcessOrderFunction.Arn
+    Value:
+      Fn::GetAtt:
+      - ProcessOrderFunction
+      - Arn
   OrderTopicArn:
     Description: SNS Topic ARN
-    Value: !Ref OrderTopic
+    Value:
+      Ref: OrderTopic

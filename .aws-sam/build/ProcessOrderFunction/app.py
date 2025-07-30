@@ -19,7 +19,7 @@ def lambda_handler(event, context):
             f"New order placed\n"
             f"Order ID : {order_id}\n"
             f"Customer : {customer}\n"
-            f"Amount   : {amount}"
+            f"Amount   : ₹{amount}"
         )
 
         sns.publish(
