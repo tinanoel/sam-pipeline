@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 
+#created sns object
 sns = boto3.client("sns")
 SNS_TOPIC_ARN = os.environ["SNS_TOPIC_ARN"]
 
